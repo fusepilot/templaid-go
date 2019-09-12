@@ -21,8 +21,8 @@ func RenderTemplateString(s string, data map[string]string) (string, error) {
 
 	resultString := t.ExecuteFuncString(func(w io.Writer, token string) (int, error) {
 		tokenString := "{{" + token + "}}"
-		if knownTag := data[token]; knownTag != "" {
-			return w.Write([]byte(knownTag))
+		if knownToken := data[token]; knownToken != "" {
+			return w.Write([]byte(knownToken))
 		} else {
 			return w.Write([]byte(tokenString))
 		}
