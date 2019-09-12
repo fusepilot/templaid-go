@@ -40,8 +40,6 @@ func CopyFs(sourcePath string, sourceFS afero.Fs, targetFS afero.Fs) {
 func GetTree(fs afero.Fs) string {
 	paths := []string{}
 	afero.Walk(fs, "", func(path string, info os.FileInfo, err error) error {
-		// bytes, _ := afero.ReadFile(memFs, path)
-		// paths = append(paths, fmt.Sprintf("%s : %s", path, bytes))
 
 		paths = append(paths, path)
 		return nil
@@ -52,11 +50,11 @@ func GetTree(fs afero.Fs) string {
 }
 
 func TestGetDestinationFilePath(t *testing.T) {
-	result := GetDestinationFilePath(GetDestinationFilePathProps{
-		TemplatePath:    "/templates/complex",
-		DestinationPath: "/output/result",
-		File:            "/templates/complex/{{template.name}}/{{template.name}}-a.md",
-		Data:            map[string]string{"template.name": "NewProject"}},
+	result := GetDestinationFilePath(
+		"/templates/complex",
+		"/output/result",
+		"/templates/complex/{{template.name}}/{{template.name}}-a.md",
+		map[string]string{"template.name": "NewProject"},
 	)
 	assert.Equal(t, result, "/output/result/NewProject/NewProject-a.md")
 }
@@ -65,19 +63,10 @@ func TestRenderTemplate(t *testing.T) {
 	osFs := afero.NewOsFs()
 	memFs := afero.NewMemMapFs()
 
-	// memFs.MkdirAll("complex", os.ModePerm)
-	// memFs.MkdirAll("complex/folder-b", os.ModePerm)
-	// afero.WriteFile(memFs, "complex/{{template.name}}-b.md", []byte("template contents"), os.ModePerm)
-
 	CopyFs("/Users/michael/Workspace/go/src/github.com/fusepilot/templaid/examples", osFs, memFs)
 
-	// templatePath, _ := filepath.Abs("./examples/complex")
-	// outputPath, _ := filepath.Abs("./output")
-
 	RenderTemplate(RenderTemplateProps{
-		Fs: memFs,
-		// TemplatePath:    templatePath,
-		// DestinationPath: outputPath,
+		Fs:              memFs,
 		TemplatePath:    "complex",
 		DestinationPath: "output",
 		Data:            map[string]string{"template.name": "NewProject"},

@@ -2,23 +2,59 @@ package templaid
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
+	template "github.com/valyala/fasttemplate"
 )
 
-type GetDestinationFilePathProps struct {
-	TemplatePath    string
-	DestinationPath string
-	File            string
-	Data            map[string]string
+func RenderTemplateString(s string, data map[string]string) (string, error) {
+	t, err := template.NewTemplate(s, "{{", "}}")
+	if err != nil {
+		log.Fatalf("unexpected error when parsing template: %s", err)
+		return "", err
+	}
+
+	resultString := t.ExecuteFuncString(func(w io.Writer, token string) (int, error) {
+		tokenString := "{{" + token + "}}"
+		if knownTag := data[token]; knownTag != "" {
+			return w.Write([]byte(knownTag))
+		} else {
+			return w.Write([]byte(tokenString))
+		}
+	})
+
+	return resultString, nil
 }
 
-func GetDestinationFilePath(props GetDestinationFilePathProps) string {
-	renderedPath := GetRenderedPath(props.File, props.TemplatePath, props.DestinationPath)
+func GetTemplatedFilePath(path string, data map[string]string) (string, error) {
+	if stringContainsToken(path) {
+		normalizedFilePath := strings.Join(filepath.SplitList(path), "/")
+		renderedFilePath, err := RenderTemplateString(normalizedFilePath, data)
+		if err != nil {
+			return "", err
+		}
+		denormalizedFilePath := strings.Join(filepath.SplitList(renderedFilePath), "/")
+		return denormalizedFilePath, nil
+	} else {
+		return path, nil
+	}
+}
 
-	result, err := GetTemplatedFilePath(renderedPath, props.Data)
+func GetRenderedPath(templatePath string, rootPath string, newRootPath string) string {
+	relativeRoot, _ := filepath.Rel(rootPath, templatePath)
+	newRelativeRoot := filepath.Join(newRootPath, relativeRoot)
+	return newRelativeRoot
+}
+
+func GetDestinationFilePath(templatePath string, destinationPath string, file string, data map[string]string) string {
+	renderedPath := GetRenderedPath(file, templatePath, destinationPath)
+
+	result, err := GetTemplatedFilePath(renderedPath, data)
 	if err != nil {
 		panic(err)
 	}
@@ -32,15 +68,6 @@ type RenderTemplateProps struct {
 	IgnorePattern   string
 	Data            map[string]string
 	TemplatePattern string
-}
-
-func checkPathExists(fs afero.Fs, path string) bool {
-	exists, err := afero.Exists(fs, path)
-	if err != nil {
-		return false
-	} else {
-		return exists
-	}
 }
 
 func RenderTemplate(props RenderTemplateProps) error {
