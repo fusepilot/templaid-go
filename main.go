@@ -63,7 +63,7 @@ func GetDestinationFilePath(templatePath string, destinationPath string, file st
 	return result
 }
 
-type RenderFolderProps struct {
+type RenderFilesProps struct {
 	Fs              afero.Fs
 	TemplatePath    string
 	FolderPattern   string
@@ -72,7 +72,7 @@ type RenderFolderProps struct {
 	Data            map[string]string
 }
 
-func RenderFilesFolders(props RenderFolderProps) {
+func RenderFiles(props RenderFilesProps) {
 	afero.Walk(props.Fs, props.TemplatePath, func(path string, info os.FileInfo, err error) error {
 		name := info.Name()
 
@@ -95,19 +95,28 @@ func RenderFilesFolders(props RenderFolderProps) {
 			}
 			defer newFile.Close()
 
-			bytes, err := afero.ReadFile(props.Fs, path)
-			if err != nil {
-				return err
-			}
-
 			if strings.HasSuffix(name, TemplateSuffix) {
+				bytes, err := afero.ReadFile(props.Fs, path)
+				if err != nil {
+					return err
+				}
 				templateBytes, err := RenderTemplateString(string(bytes), props.Data)
 				if err != nil {
 					return err
 				}
 				newFile.WriteString(templateBytes)
 			} else {
-				newFile.Write(bytes)
+				srcFile, err := props.Fs.Open(path)
+				if err != nil {
+					return err
+				}
+
+				defer srcFile.Close()
+
+				_, err = io.Copy(newFile, srcFile)
+				if err != nil {
+					return err
+				}
 			}
 
 		}
@@ -129,7 +138,7 @@ func RenderTemplate(props RenderTemplateProps) error {
 		return fmt.Errorf(`template path "%s" doesnt not exist`, props.TemplatePath)
 	}
 
-	RenderFilesFolders(RenderFolderProps{
+	RenderFiles(RenderFilesProps{
 		Fs:              props.Fs,
 		TemplatePath:    props.TemplatePath,
 		DestinationPath: props.DestinationPath,
