@@ -3,7 +3,6 @@ package templaid
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -37,18 +36,6 @@ func CopyFs(sourcePath string, sourceFS afero.Fs, targetFS afero.Fs) {
 	})
 }
 
-func GetTree(fs afero.Fs) string {
-	paths := []string{}
-	afero.Walk(fs, "", func(path string, info os.FileInfo, err error) error {
-
-		paths = append(paths, path)
-		return nil
-	})
-
-	result := strings.Join(paths, "\n") + "\n"
-	return result
-}
-
 func TestGetDestinationFilePath(t *testing.T) {
 	result := GetDestinationFilePath(
 		"/templates/complex",
@@ -63,16 +50,26 @@ func TestRenderTemplate(t *testing.T) {
 	osFs := afero.NewOsFs()
 	memFs := afero.NewMemMapFs()
 
-	CopyFs("/Users/michael/Workspace/go/src/github.com/fusepilot/templaid/examples", osFs, memFs)
+	CopyFs("examples", osFs, memFs)
 
 	RenderTemplate(RenderTemplateProps{
 		Fs:              memFs,
 		TemplatePath:    "complex",
 		DestinationPath: "output",
+		IgnorePatterns:  []string{".gitkeep", "complex/folder-c"},
 		Data:            map[string]string{"template.name": "NewProject"},
 	})
 
-	paths := GetTree(memFs)
-
-	println(paths)
+	assert.Equal(t, map[string]string{"output": "",
+		"output/NewProject":                             "",
+		"output/NewProject/NewProject-a.md.template":    "NewProject that should be parsed\n",
+		"output/NewProject/NewProject-b.md":             "{{template.name}} that shouldnt be parsed\n",
+		"output/NewProject/file-c.md":                   "file c content\n",
+		"output/folder-b":                               "",
+		"output/folder-b/.hidden.json":                  "",
+		"output/folder-b/NewProject-folder-c":           "",
+		"output/folder-b/NewProject-folder-d":           "",
+		"output/folder-b/NewProject-folder-d/file-e.md": "{{template.name}} shouldnt be replaced. file-e\n",
+		"output/folder-b/file-d.md":                     "file d content\n",
+	}, getTreeMap(memFs, "output"))
 }
