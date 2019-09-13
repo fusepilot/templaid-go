@@ -60,8 +60,9 @@ func TestRenderTemplate(t *testing.T) {
 		Data:            map[string]string{"template.name": "NewProject"},
 	})
 
-	assert.Equal(t, map[string]string{"output": "",
-		"output/NewProject":                             "",
+	assert.Equal(t, map[string]string{
+		"output":            "",
+		"output/NewProject": "",
 		"output/NewProject/NewProject-a.md.template":    "NewProject that should be parsed\n",
 		"output/NewProject/NewProject-b.md":             "{{template.name}} that shouldnt be parsed\n",
 		"output/NewProject/file-c.md":                   "file c content\n",
