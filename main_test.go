@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func CopyFs(sourcePath string, sourceFS afero.Fs, targetFS afero.Fs) {
+func copyFs(sourcePath string, sourceFS afero.Fs, targetFS afero.Fs) {
 	afero.Walk(sourceFS, sourcePath, func(path string, info os.FileInfo, err error) error {
 		relPath, _ := filepath.Rel(sourcePath, path)
 		if info.IsDir() {
@@ -50,7 +50,7 @@ func TestRenderTemplate(t *testing.T) {
 	osFs := afero.NewOsFs()
 	memFs := afero.NewMemMapFs()
 
-	CopyFs("examples", osFs, memFs)
+	copyFs("examples", osFs, memFs)
 
 	RenderTemplate(RenderTemplateProps{
 		Fs:              memFs,
