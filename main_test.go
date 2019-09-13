@@ -1,40 +1,11 @@
 package templaid
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
-
-func copyFs(sourcePath string, sourceFS afero.Fs, targetFS afero.Fs) {
-	afero.Walk(sourceFS, sourcePath, func(path string, info os.FileInfo, err error) error {
-		relPath, _ := filepath.Rel(sourcePath, path)
-		if info.IsDir() {
-			err := targetFS.MkdirAll(relPath, os.ModePerm)
-			if err != nil {
-				return err
-			}
-		} else {
-			data, err := afero.ReadFile(sourceFS, path)
-			if err != nil {
-				return err
-			}
-			file, err := targetFS.Create(relPath)
-			if err != nil {
-				return err
-			}
-			_, err = file.Write(data)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-}
 
 func TestGetDestinationFilePath(t *testing.T) {
 	result := GetDestinationFilePath(
@@ -47,20 +18,33 @@ func TestGetDestinationFilePath(t *testing.T) {
 }
 
 func TestRenderTemplate(t *testing.T) {
-	osFs := afero.NewOsFs()
 	memFs := afero.NewMemMapFs()
 
-	copyFs("examples", osFs, memFs)
+	writeFs(memFs, map[string]string{
+		"templates/complex/":                   "",
+		"templates/complex/{{template.name}}/": "",
+		"templates/complex/{{template.name}}/{{template.name}}-a.md.template": "{{template.name}} that should be parsed\n",
+		"templates/complex/{{template.name}}/{{template.name}}-b.md":          "{{template.name}} that shouldnt be parsed\n",
+		"templates/complex/{{template.name}}/file-c.md":                       "file c content\n",
+		"templates/complex/folder-b/":                                         "",
+		"templates/complex/folder-b/.hidden.json":                             "{\n  \"foo\": \"bar\"\n}\n",
+		"templates/complex/folder-b/{{template.name}}-folder-c/":              "",
+		"templates/complex/folder-b/{{template.name}}-folder-d/":              "",
+		"templates/complex/folder-b/{{template.name}}-folder-d/file-e.md":     "{{template.name}} shouldnt be replaced. file-e\n",
+		"templates/complex/folder-b/file-d.md":                                "file d content\n",
+		"templates/complex/folder-e/":                                         "",
+		"templates/complex/folder-e/.gitkeep":                                 "",
+	})
 
 	RenderTemplate(RenderTemplateProps{
 		Fs:              memFs,
-		TemplatePath:    "complex",
+		TemplatePath:    "templates/complex",
 		DestinationPath: "output",
-		IgnorePatterns:  []string{".gitkeep", "complex/folder-c"},
+		IgnorePatterns:  []string{".gitkeep"},
 		Data:            map[string]string{"template.name": "NewProject"},
 	})
 
-	assert.Equal(t, map[string]string{
+	assertFsEqual(t, memFs, "output", map[string]string{
 		"output":            "",
 		"output/NewProject": "",
 		"output/NewProject/NewProject-a.md.template":    "NewProject that should be parsed\n",
@@ -72,5 +56,7 @@ func TestRenderTemplate(t *testing.T) {
 		"output/folder-b/NewProject-folder-d":           "",
 		"output/folder-b/NewProject-folder-d/file-e.md": "{{template.name}} shouldnt be replaced. file-e\n",
 		"output/folder-b/file-d.md":                     "file d content\n",
-	}, getTreeMap(memFs, "output"))
+		"output/folder-e":                               "",
+	})
+
 }
