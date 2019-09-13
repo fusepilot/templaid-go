@@ -45,9 +45,9 @@ func TestRenderTemplate(t *testing.T) {
 	})
 
 	assertFsEqual(t, memFs, "/output", map[string]string{
-		"/output/":            "",
-		"/output/NewProject/": "",
-		"/output/NewProject/NewProject-a.md.template":    "NewProject that should be parsed\n",
+		"/output/":                                       "",
+		"/output/NewProject/":                            "",
+		"/output/NewProject/NewProject-a.md":             "NewProject that should be parsed\n",
 		"/output/NewProject/NewProject-b.md":             "{{template.name}} that shouldnt be parsed\n",
 		"/output/NewProject/file-c.md":                   "file c content\n",
 		"/output/folder-b/":                              "",

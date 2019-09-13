@@ -89,13 +89,19 @@ func RenderFiles(props RenderFilesProps) {
 			props.Fs.MkdirAll(newFolderPath, os.ModePerm)
 		} else {
 			newFilePath := GetDestinationFilePath(props.TemplatePath, props.DestinationPath, path, props.Data)
+
+			isTemplate := strings.HasSuffix(newFilePath, TemplateSuffix)
+			if isTemplate {
+				newFilePath = strings.Replace(newFilePath, TemplateSuffix, "", 1) // assumes .template is only defined once in the file name
+			}
+
 			newFile, err := props.Fs.Create(newFilePath)
 			if err != nil {
 				return err
 			}
 			defer newFile.Close()
 
-			if strings.HasSuffix(name, TemplateSuffix) {
+			if isTemplate {
 				bytes, err := afero.ReadFile(props.Fs, path)
 				if err != nil {
 					return err
