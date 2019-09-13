@@ -1,4 +1,4 @@
-module github.com/fusepilot/templaid
+module github.com/fusepilot/templaid-go
 
 go 1.12
 
