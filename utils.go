@@ -32,7 +32,11 @@ func getTreeMap(fs afero.Fs, path string) map[string]string {
 	paths := map[string]string{}
 	afero.Walk(fs, path, func(path string, info os.FileInfo, err error) error {
 		bytes, _ := afero.ReadFile(fs, path)
-		paths[path] = string(bytes)
+		if info.IsDir() {
+			paths[path+"/"] = string(bytes)
+		} else {
+			paths[path] = string(bytes)
+		}
 		return nil
 	})
 
