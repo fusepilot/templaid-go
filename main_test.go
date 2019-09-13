@@ -66,7 +66,7 @@ func TestRenderTemplate(t *testing.T) {
 		"output/NewProject/NewProject-b.md":             "{{template.name}} that shouldnt be parsed\n",
 		"output/NewProject/file-c.md":                   "file c content\n",
 		"output/folder-b":                               "",
-		"output/folder-b/.hidden.json":                  "",
+		"output/folder-b/.hidden.json":                  "{\n  \"foo\": \"bar\"\n}\n",
 		"output/folder-b/NewProject-folder-c":           "",
 		"output/folder-b/NewProject-folder-d":           "",
 		"output/folder-b/NewProject-folder-d/file-e.md": "{{template.name}} shouldnt be replaced. file-e\n",
